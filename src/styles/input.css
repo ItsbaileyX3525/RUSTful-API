@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+@font-face {
+    font-family: 'MozillaTypaShit';
+    src: url('/src/styles/Mozilla.ttf');
+}
+
+html {
+    font-family: 'MozillaTypaShit';
+}

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-gray-700">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="/src/styles/output.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome!</title>
+</head>
+<body>
+    <div class="flex justify-center">
+        <p class="mt-10 text-4xl text-blue-600">Welcome to the RUSTful API!</p>
+    </div>
+    <div id="container" class="mt-10 flex justify-center w-screen">
+        <div class="flex justify-center p-8 max-w-[80%] min-w-[80%] rounded-xl bg-blue-300 border-blue-400 border-6">
+            <p class="text-3xl">What services do I offer?</p>
+        </div>
+    </div>
+    <div id="container" class="mt-4 flex justify-center w-screen">
+        <div class="flex flex-col items-center p-8 max-w-[80%] min-w-[80%] rounded-xl bg-blue-300 border-blue-400 border-6">
+            <p class="text-2xl">Quotes</p>
+            <p class="self-center mt-2">
+                Ever wanted to get random quotes from The Bang Theory? Well you are in luck!
+            </p>
+            <p class="self-center mt-1">
+                By invoking the API at
+                <code id="allQuotes" onclick="copyURL('allQuotes', event)" class="p-[2px] rounded-sm bg-black text-white cursor-pointer select-none">/quotes</code>
+                You can get a list of all the available quotes in the store!
+                Alternatively, calling
+                <code id="singleQuote" onclick="copyURL('singleQuote', event)" class="p-[2px] rounded-sm bg-black text-white cursor-pointer select-none">/quote</code>
+                gives you just a single random quote!
+            </p>
+            <p>
+                Finally, want to add some custom quotes to the list from your favorite show? 
+                Well you most certainly can! Calling (as a POST request)
+                <code id="postQuote" onclick="copyURL('postQuote', event)" class="p-[2px] rounded-sm bg-black text-white cursor-pointer select-none">/quotes</code>
+                You can upload your own quote juse pass <code class="p-[2px] rounded-sm bg-black text-white cursor-pointer select-none">text: "quote"</code> and <code class="p-[2px] rounded-sm bg-black text-white cursor-pointer select-none">speaker: "Sheldon Cooper"</code>
+                You can now find your quote on the list!
+            </p>
+            <div id="quoteContainer" class="overflow-y-auto mt-8 bg-gray-800 max-h w-3/4 py-2 border-gray-950 border-4">
+                <p id="loadedQuote" class="text-center text-xl max-h-[1.50rem] text-white">Quote can be seen in prod</p>
+            </div>
+        </div>
+    </div>
+    <div id="copied" class="transition-transform duration-700 delay-100 translate-x-0 hidden text-green-400 text-sm bg-gray-950 px-2 py-1 rounded-xl pointer-events-none">
+        <p>
+            Copied to clipboard!
+        </p>
+    </div>
+</body>
+<script src="/src/styles/index.js"></script>
+</html>
