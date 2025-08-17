@@ -114,10 +114,10 @@ async fn main() -> std::io::Result<()> {
 
     let config = load_rustls_config();
 
-    println!("Starting HTTPS server at https://127.0.0.1:8443");
+    println!("Starting HTTPS server at https://127.0.0.1");
     println!("Starting HTTP server at http://127.0.0.1:8989");
 
-    HttpServer::new({
+    let https_server = HttpServer::new({
         let app_state = app_state.clone();
         move || {
             App::new()
@@ -132,7 +132,26 @@ async fn main() -> std::io::Result<()> {
                 .service(actix_files::Files::new("/", "./src").index_file("index.html"))
         }
     })
-    .bind_rustls_0_23(("127.0.0.1", 8443), config)?
-    .run()
-    .await
+    .bind_rustls_0_23(("127.0.0.1", 443), config)?
+    .run();
+
+    let http_server = HttpServer::new(move || {
+        App::new()
+            .app_data(app_state.clone())
+            .service(get_quotes)
+            .service(get_random_quote)
+            .service(get_quote_by_id)
+            .service(add_quote)
+            .service(greet)
+            // Static files must go last for some reason
+            .service(actix_files::Files::new("/src/styles", "./src/styles"))
+            .service(actix_files::Files::new("/", "./src").index_file("index.html"))
+    })
+    .bind(("127.0.0.1", 8989))?
+    .run();
+
+    // Run both servers concurrently
+    tokio::try_join!(https_server, http_server)?;
+    
+    Ok(())
 }
