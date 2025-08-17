@@ -4,6 +4,10 @@ use rand::{seq::IndexedMutRandom};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use uuid::Uuid;
+use rustls::{ServerConfig, pki_types::{PrivateKeyDer, CertificateDer}};
+use rustls_pemfile::{certs, private_key};
+use std::fs::File;
+use std::io::BufReader;
 
 #[get("/greet/{name}")]
 async fn greet(name: web::Path<String>) -> impl Responder {
@@ -71,6 +75,24 @@ async fn add_quote(data: web::Data<AppState>, new_quote: web::Json<NewQuote>,) -
     HttpResponse::Created().json(quote)
 }
 
+fn load_rustls_config() -> rustls::ServerConfig {
+    let cert_file = &mut BufReader::new(File::open("ssl/cert.pem").expect("Failed to open cert.pem"));
+    let key_file = &mut BufReader::new(File::open("ssl/key.pem").expect("Failed to open key.pem"));
+
+    let cert_chain: Vec<CertificateDer> = certs(cert_file)
+        .collect::<Result<Vec<_>, _>>()
+        .expect("Failed to parse certificate");
+
+    let private_key: PrivateKeyDer = private_key(key_file)
+        .expect("Failed to parse private key")
+        .expect("No private key found");
+
+    ServerConfig::builder()
+        .with_no_client_auth()
+        .with_single_cert(cert_chain, private_key)
+        .expect("Failed to create TLS configuration")
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let initial_quotes = vec![
@@ -90,20 +112,27 @@ async fn main() -> std::io::Result<()> {
         quotes: Mutex::new(initial_quotes),
     });
 
-    HttpServer::new(move || {
-        App::new()
-            .app_data(app_state.clone())
-            .service(get_quotes)
-            .service(get_random_quote)
-            .service(get_quote_by_id)
-            .service(add_quote)
-            .service(greet)
+    let config = load_rustls_config();
 
-            // Static files must go last for some reason
-            .service(actix_files::Files::new("/src/styles", "./src/styles"))
-            .service(actix_files::Files::new("/", "./src").index_file("index.html"))
+    println!("Starting HTTPS server at https://127.0.0.1:8443");
+    println!("Starting HTTP server at http://127.0.0.1:8989");
+
+    HttpServer::new({
+        let app_state = app_state.clone();
+        move || {
+            App::new()
+                .app_data(app_state.clone())
+                .service(get_quotes)
+                .service(get_random_quote)
+                .service(get_quote_by_id)
+                .service(add_quote)
+                .service(greet)
+                // Static files must go last for some reason
+                .service(actix_files::Files::new("/src/styles", "./src/styles"))
+                .service(actix_files::Files::new("/", "./src").index_file("index.html"))
+        }
     })
-    .bind(("127.0.0.1", 8989))?
+    .bind_rustls_0_23(("127.0.0.1", 8443), config)?
     .run()
     .await
 }
