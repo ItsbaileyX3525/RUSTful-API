@@ -1,50 +1,349 @@
 <!DOCTYPE html>
-<html lang="en" class="bg-gray-700">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <link rel="stylesheet" href="/src/styles/output.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome!</title>
+    <title>Quotes API - Swagger UI</title>
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.14.0/swagger-ui.min.css" />
+    <style>
+        html {
+            box-sizing: border-box;
+            overflow: -moz-scrollbars-vertical;
+            overflow-y: scroll;
+        }
+        *, *:before, *:after {
+            box-sizing: inherit;
+        }
+        body {
+            margin:0;
+            background: #fafafa;
+        }
+        #error-message {
+            display: none;
+            padding: 20px;
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef5350;
+            border-radius: 4px;
+            margin: 20px;
+        }
+    </style>
 </head>
 <body>
-    <div class="flex justify-center">
-        <p class="mt-10 text-4xl text-blue-600">Welcome to the RUSTful API!</p>
+    <div id="error-message">
+        <h3>Error loading Swagger UI</h3>
+        <p>There was an issue loading the Swagger interface. Please try refreshing the page.</p>
     </div>
-    <div id="container" class="mt-10 flex justify-center w-screen">
-        <div class="flex justify-center p-8 max-w-[80%] min-w-[80%] rounded-xl bg-blue-300 border-blue-400 border-6">
-            <p class="text-3xl">What services do I offer?</p>
-        </div>
-    </div>
-    <div id="container" class="mt-4 flex justify-center w-screen">
-        <div class="flex flex-col items-center p-8 max-w-[80%] min-w-[80%] rounded-xl bg-blue-300 border-blue-400 border-6">
-            <p class="text-2xl">Quotes</p>
-            <p class="self-center mt-2">
-                Ever wanted to get random quotes from The Bang Theory? Well you are in luck!
-            </p>
-            <p class="self-center mt-1">
-                By invoking the API at
-                <code id="allQuotes" onclick="copyURL('allQuotes', event)" class="p-[2px] rounded-sm bg-black text-white cursor-pointer select-none">/quotes</code>
-                You can get a list of all the available quotes in the store!
-                Alternatively, calling
-                <code id="singleQuote" onclick="copyURL('singleQuote', event)" class="p-[2px] rounded-sm bg-black text-white cursor-pointer select-none">/quote</code>
-                gives you just a single random quote!
-            </p>
-            <p>
-                Finally, want to add some custom quotes to the list from your favorite show? 
-                Well you most certainly can! Calling (as a POST request)
-                <code id="postQuote" onclick="copyURL('postQuote', event)" class="p-[2px] rounded-sm bg-black text-white cursor-pointer select-none">/quotes</code>
-                You can upload your own quote juse pass <code class="p-[2px] rounded-sm bg-black text-white cursor-pointer select-none">text: "quote"</code> and <code class="p-[2px] rounded-sm bg-black text-white cursor-pointer select-none">speaker: "Sheldon Cooper"</code>
-                You can now find your quote on the list!
-            </p>
-            <div id="quoteContainer" class="overflow-y-auto mt-8 bg-gray-800 max-h w-3/4 py-2 border-gray-950 border-4">
-                <p id="loadedQuote" class="text-center text-xl max-h-[1.50rem] text-white">Quote can be seen in prod</p>
-            </div>
-        </div>
-    <div id="copied" class="transition-transform duration-700 delay-100 translate-x-0 hidden text-green-400 text-sm bg-gray-950 px-2 py-1 rounded-xl pointer-events-none">
-        <p>
-            Copied to clipboard!
-        </p>
-    </div>
+    <div id="swagger-ui"></div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.14.0/swagger-ui-bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.14.0/swagger-ui-standalone-preset.min.js"></script>
+    <script>
+        try {
+            window.onload = function() {
+                const spec = {
+                    "openapi": "3.0.0",
+                    "info": {
+                        "title": "RUSTful API",
+                        "description": "An API for storing and retrieving quotes, create shortened URLs and storing all the texy you want!",
+                        "version": "1.0.0"
+                    },
+                    "servers": [
+                        {
+                            "url": "https://rustful.baileygamesand.codes",
+                            "description": "Production"
+                        },
+                        {
+                            "url": "http://localhost:840",
+                            "description": "Test server"
+                        }
+                    ],
+                    "paths": {
+                        "/quotes": {
+                            "post": {
+                                "summary": "Create a new quote",
+                                "description": "Add a new quote with text and speaker information",
+                                "requestBody": {
+                                    "required": true,
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "type": "object",
+                                                "required": ["text", "speaker"],
+                                                "properties": {
+                                                    "text": {
+                                                        "type": "string",
+                                                        "description": "The quote text",
+                                                        "example": "test"
+                                                    },
+                                                    "speaker": {
+                                                        "type": "string",
+                                                        "description": "The person who said the quote",
+                                                        "example": "me"
+                                                    }
+                                                }
+                                            },
+                                            "examples": {
+                                                "example1": {
+                                                    "summary": "Basic quote example",
+                                                    "value": {
+                                                        "text": "test",
+                                                        "speaker": "me"
+                                                    }
+                                                },
+                                                "example2": {
+                                                    "summary": "Inspirational quote",
+                                                    "value": {
+                                                        "text": "The only way to do great work is to love what you do",
+                                                        "speaker": "Steve Jobs"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "responses": {
+                                    "200": {
+                                        "description": "Quote created successfully",
+                                        "content": {
+                                            "application/json": {
+                                                "schema": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "integer",
+                                                            "description": "Unique identifier for the quote"
+                                                        },
+                                                        "text": {
+                                                            "type": "string",
+                                                            "description": "The quote text"
+                                                        },
+                                                        "speaker": {
+                                                            "type": "string",
+                                                            "description": "The person who said the quote"
+                                                        },
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "400": {
+                                        "description": "Bad request - invalid input",
+                                        "content": {
+                                            "application/json": {
+                                                "schema": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "error": {
+                                                            "type": "string",
+                                                            "example": "Invalid input: text and speaker are required"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "500": {
+                                        "description": "Internal server error",
+                                        "content": {
+                                            "application/json": {
+                                                "schema": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "error": {
+                                                            "type": "string",
+                                                            "example": "Internal server error"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "get": {
+                                "summary": "Get all quotes",
+                                "description": "Retrieve a list of all quotes",
+                                "responses": {
+                                    "200": {
+                                        "description": "List of quotes retrieved successfully",
+                                        "content": {
+                                            "application/json": {
+                                                "schema": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "id": {
+                                                                "type": "integer",
+                                                                "description": "Unique identifier for the quote"
+                                                            },
+                                                            "text": {
+                                                                "type": "string",
+                                                                "description": "The quote text"
+                                                            },
+                                                            "speaker": {
+                                                                "type": "string",
+                                                                "description": "The person who said the quote"
+                                                            },
+                                                            "created_at": {
+                                                                "type": "string",
+                                                                "format": "date-time",
+                                                                "description": "When the quote was created"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "/quote": {
+                            "get": {
+                                "summary": "Get a random quote",
+                                "description": "Retrieve a single random quote from the collection",
+                                "responses": {
+                                    "200": {
+                                        "description": "Random quote retrieved successfully",
+                                        "content": {
+                                            "application/json": {
+                                                "schema": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "integer",
+                                                            "description": "Unique identifier for the quote"
+                                                        },
+                                                        "text": {
+                                                            "type": "string",
+                                                            "description": "The quote text"
+                                                        },
+                                                        "speaker": {
+                                                            "type": "string",
+                                                            "description": "The person who said the quote"
+                                                        },
+                                                        "created_at": {
+                                                            "type": "string",
+                                                            "format": "date-time",
+                                                            "description": "When the quote was created"
+                                                        }
+                                                    }
+                                                },
+                                                "example": {
+                                                    "id": 42,
+                                                    "text": "The only way to do great work is to love what you do",
+                                                    "speaker": "Steve Jobs",
+                                                    "created_at": "2024-01-15T10:30:00Z"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "404": {
+                                        "description": "No quotes found",
+                                        "content": {
+                                            "application/json": {
+                                                "schema": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "error": {
+                                                            "type": "string",
+                                                            "example": "No quotes available"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "/quotes/{id}": {
+                            "get": {
+                                "summary": "Get a specific quote",
+                                "description": "Retrieve a quote by its ID",
+                                "parameters": [
+                                    {
+                                        "name": "id",
+                                        "in": "path",
+                                        "required": true,
+                                        "schema": {
+                                            "type": "integer"
+                                        },
+                                        "description": "The quote ID"
+                                    }
+                                ],
+                                "responses": {
+                                    "200": {
+                                        "description": "Quote retrieved successfully",
+                                        "content": {
+                                            "application/json": {
+                                                "schema": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "id": {
+                                                            "type": "integer",
+                                                            "description": "Unique identifier for the quote"
+                                                        },
+                                                        "text": {
+                                                            "type": "string",
+                                                            "description": "The quote text"
+                                                        },
+                                                        "speaker": {
+                                                            "type": "string",
+                                                            "description": "The person who said the quote"
+                                                        },
+                                                        "created_at": {
+                                                            "type": "string",
+                                                            "format": "date-time",
+                                                            "description": "When the quote was created"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "404": {
+                                        "description": "Quote not found",
+                                        "content": {
+                                            "application/json": {
+                                                "schema": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "error": {
+                                                            "type": "string",
+                                                            "example": "Quote not found"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+
+                const ui = SwaggerUIBundle({
+                    spec: spec,
+                    dom_id: '#swagger-ui',
+                    deepLinking: true,
+                    presets: [
+                        SwaggerUIBundle.presets.apis,
+                        SwaggerUIStandalonePreset
+                    ],
+                    plugins: [
+                        SwaggerUIBundle.plugins.DownloadUrl
+                    ],
+                    layout: "StandaloneLayout",
+                    tryItOutEnabled: true
+                });
+            };
+        } catch (error) {
+            console.error('Error initializing Swagger UI:', error);
+            document.getElementById('error-message').style.display = 'block';
+            document.getElementById('swagger-ui').style.display = 'none';
+        }
+    </script>
 </body>
-<script src="/src/styles/index.js"></script>
 </html>

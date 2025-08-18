@@ -1,4 +1,5 @@
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_cors::Cors;
 use actix_files;
 use rand::{seq::IndexedMutRandom};
 use serde::{Deserialize, Serialize};
@@ -117,10 +118,18 @@ async fn main() -> std::io::Result<()> {
     println!("Starting HTTPS server at https://0.0.0.0");
     println!("Starting HTTP server at http://0.0.0.0:80");
 
+
     let https_server = HttpServer::new({
         let app_state = app_state.clone();
         move || {
             App::new()
+                .wrap(
+                    Cors::default()
+                        .allow_any_origin()
+                        .allow_any_method()
+                        .allow_any_header()
+                        .supports_credentials()
+                )
                 .app_data(app_state.clone())
                 .service(get_quotes)
                 .service(get_random_quote)
@@ -137,6 +146,13 @@ async fn main() -> std::io::Result<()> {
 
     let http_server = HttpServer::new(move || {
         App::new()
+            .wrap(
+                Cors::default()
+                    .allow_any_origin()
+                    .allow_any_method()
+                    .allow_any_header()
+                    .supports_credentials()
+            )
             .app_data(app_state.clone())
             .service(get_quotes)
             .service(get_random_quote)
@@ -144,14 +160,13 @@ async fn main() -> std::io::Result<()> {
             .service(add_quote)
             .service(greet)
             // Static files must go last for some reason
-            .service(actix_files::Files::new("/src/styles", "./src/styles"))
             .service(actix_files::Files::new("/", "./src").index_file("index.html"))
     })
     .bind(("0.0.0.0", 80))?
     .run();
 
+
     // Run both servers concurrently
-    tokio::try_join!(https_server, http_server)?;
-    
+    let (_https, _http) = tokio::try_join!(https_server, http_server)?;
     Ok(())
 }
