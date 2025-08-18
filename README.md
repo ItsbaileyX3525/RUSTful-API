@@ -4,7 +4,7 @@ The rustful api is a REST api created in rust (doy) where you can retrieve or up
 
 ## Utilising the power of the API
 
-To use the API you can either use the webpage which has all the information you need to start.
+To use the API you can either use the webpage which has all the information you need to start. Like literally everything you dont even need to read anything on this README or you can read this README, I recommend reading the information on the SWAGGER site as it is most likely better explained than it is here!
 
 ### Using the post feature on Swagger
 
