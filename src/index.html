@@ -48,7 +48,8 @@
                     },
                     "tags": [
                         { "name": "Quotes", "description": "Create and retrieve quotes" },
-                        { "name": "URL Shortener", "description": "Shorten and resolve URLs" }
+                        { "name": "URL Shortener", "description": "Shorten and resolve URLs" },
+                        { "name": "Pastebin", "description": "Store and retrieve text snippets" }
                     ],
                     "servers": [
                         {
@@ -166,6 +167,28 @@
                                 "parameters": [ { "name": "short", "in": "path", "required": true, "schema": { "type": "string" }, "examples": { "ex": { "value": "a1b2c" } } } ],
                                 "responses": { "302": { "description": "Redirect to original URL (Location header)" }, "404": { "description": "Short code not found" } }
                             }
+                        },
+                        "/paste": {
+                            "post": {
+                                "tags": ["Pastebin"],
+                                "summary": "Create a paste",
+                                "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PasteCreateRequest" }, "examples": { "simple": { "value": { "text": "Hello world" } }, "long": { "summary": "Long text", "value": { "text": "Lorem ipsum dolor sit amet..." } } } } } },
+                                "responses": { "201": { "description": "Paste created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PasteResponse" } } } }, "400": { "description": "Invalid input" } }
+                            }
+                        },
+                        "/paste/{code}": {
+                            "get": {
+                                "tags": ["Pastebin"],
+                                "summary": "Get paste",
+                                "parameters": [ { "name": "code", "in": "path", "required": true, "schema": { "type": "string" }, "examples": { "ex": { "value": "p12345" } } } ],
+                                "responses": { "200": { "description": "Paste", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PasteResponse" } } } }, "404": { "description": "Not found" } }
+                            },
+                            "delete": {
+                                "tags": ["Pastebin"],
+                                "summary": "Delete paste",
+                                "parameters": [ { "name": "code", "in": "path", "required": true, "schema": { "type": "string" } } ],
+                                "responses": { "204": { "description": "Deleted" }, "404": { "description": "Not found" } }
+                            }
                         }
                     }
                 ,
@@ -189,7 +212,9 @@
                             },
                             "required": ["short", "url"],
                             "example": { "short": "abc12", "url": "https://www.rust-lang.org" }
-                        }
+                        },
+                        "PasteCreateRequest": { "type": "object", "properties": { "text": { "type": "string" } }, "required": ["text"], "example": { "text": "Some long multi-line text..." } },
+                        "PasteResponse": { "type": "object", "properties": { "code": { "type": "string" }, "text": { "type": "string" } }, "required": ["code", "text"], "example": { "code": "p12345", "text": "Hello world" } }
                     }
                 }
                 };

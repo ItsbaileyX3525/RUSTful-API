@@ -33,6 +33,7 @@ use std::collections::HashMap;
 struct AppState {
     quotes: Mutex<Vec<Quote>>,
     url_map: Mutex<HashMap<String, String>>, // short -> original
+    paste_map: Mutex<HashMap<String, String>>,
 }
 
 #[get("/quotes")]
@@ -91,6 +92,12 @@ struct ShortenResponse {
     url: String,
 }
 
+#[derive(Deserialize)]
+struct PasteCreateRequest { text: String }
+
+#[derive(Serialize)]
+struct PasteResponse { code: String, text: String }
+
 #[post("/shorten")]
 async fn shorten_url(data: web::Data<AppState>, req: web::Json<ShortenRequest>) -> impl Responder {
     let mut url_map = data.url_map.lock().unwrap();
@@ -118,6 +125,44 @@ async fn delete_short_url(data: web::Data<AppState>, path: web::Path<String>) ->
         HttpResponse::NoContent().finish()
     } else {
         HttpResponse::NotFound().body("Short URL not found.")
+    }
+}
+
+fn generate_code(existing: &HashMap<String, String>, len: usize) -> String {
+    loop {
+        let candidate = &Uuid::new_v4().to_string().replace('-', "");
+        let candidate = &candidate[..len];
+        if !existing.contains_key(candidate) { return candidate.to_string(); }
+    }
+}
+
+#[post("/paste")]
+async fn create_paste(data: web::Data<AppState>, body: web::Json<PasteCreateRequest>) -> impl Responder {
+    let mut map = data.paste_map.lock().unwrap();
+    let code = generate_code(&map, 6);
+    map.insert(code.clone(), body.text.clone());
+    HttpResponse::Created().json(PasteResponse { code, text: body.text.clone() })
+}
+
+#[get("/paste/{code}")]
+async fn get_paste(data: web::Data<AppState>, path: web::Path<String>) -> impl Responder {
+    let code = path.into_inner();
+    let map = data.paste_map.lock().unwrap();
+    if let Some(text) = map.get(&code) {
+        HttpResponse::Ok().json(PasteResponse { code, text: text.clone() })
+    } else {
+        HttpResponse::NotFound().body("Paste not found.")
+    }
+}
+
+#[delete("/paste/{code}")]
+async fn delete_paste(data: web::Data<AppState>, path: web::Path<String>) -> impl Responder {
+    let code = path.into_inner();
+    let mut map = data.paste_map.lock().unwrap();
+    if map.remove(&code).is_some() {
+        HttpResponse::NoContent().finish()
+    } else {
+        HttpResponse::NotFound().body("Paste not found.")
     }
 }
 
@@ -164,6 +209,7 @@ async fn main() -> std::io::Result<()> {
     let app_state = web::Data::new(AppState {
         quotes: Mutex::new(initial_quotes),
         url_map: Mutex::new(HashMap::new()),
+    paste_map: Mutex::new(HashMap::new()),
     });
 
     match load_rustls_config() {
@@ -183,6 +229,7 @@ async fn main() -> std::io::Result<()> {
                                 .supports_credentials()
                         )
                         .app_data(app_state.clone())
+                        .app_data(web::JsonConfig::default().limit(5_000_000))
                         .service(get_quotes)
                         .service(get_random_quote)
                         .service(get_quote_by_id)
@@ -191,6 +238,9 @@ async fn main() -> std::io::Result<()> {
                         .service(shorten_url)
                         .service(get_shortened_url)
                         .service(delete_short_url)
+                        .service(create_paste)
+                        .service(get_paste)
+                        .service(delete_paste)
                         // Static files must go last for some reason
                         .service(actix_files::Files::new("/src/styles", "./src/styles"))
                         .service(actix_files::Files::new("/", "./src").index_file("index.html"))
@@ -209,6 +259,7 @@ async fn main() -> std::io::Result<()> {
                             .supports_credentials()
                     )
                     .app_data(app_state.clone())
+                    .app_data(web::JsonConfig::default().limit(5_000_000))
                     .service(get_quotes)
                     .service(get_random_quote)
                     .service(get_quote_by_id)
@@ -217,6 +268,9 @@ async fn main() -> std::io::Result<()> {
                     .service(shorten_url)
                     .service(get_shortened_url)
                     .service(delete_short_url)
+                    .service(create_paste)
+                    .service(get_paste)
+                    .service(delete_paste)
                     // Static files must go last for some reason
                     .service(actix_files::Files::new("/", "./src").index_file("index.html"))
             })
@@ -239,6 +293,7 @@ async fn main() -> std::io::Result<()> {
                             .supports_credentials()
                     )
                     .app_data(app_state.clone())
+                    .app_data(web::JsonConfig::default().limit(5_000_000))
                     .service(get_quotes)
                     .service(get_random_quote)
                     .service(get_quote_by_id)
@@ -247,6 +302,9 @@ async fn main() -> std::io::Result<()> {
                     .service(shorten_url)
                     .service(get_shortened_url)
                     .service(delete_short_url)
+                    .service(create_paste)
+                    .service(get_paste)
+                    .service(delete_paste)
                     // Static files must go last for some reason
                     .service(actix_files::Files::new("/", "./src").index_file("index.html"))
             })
