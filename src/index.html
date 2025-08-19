@@ -39,13 +39,17 @@
     <script>
         try {
             window.onload = function() {
-                const spec = {
+        const spec = {
                     "openapi": "3.0.0",
                     "info": {
                         "title": "RUSTful API",
-                        "description": "An API for storing and retrieving quotes, create shortened URLs and storing all the texy you want!",
+            "description": "API for quotes and URL shortening.",
                         "version": "1.0.0"
                     },
+                    "tags": [
+                        { "name": "Quotes", "description": "Create and retrieve quotes" },
+                        { "name": "URL Shortener", "description": "Shorten and resolve URLs" }
+                    ],
                     "servers": [
                         {
                             "url": "https://rustful.baileygamesand.codes",
@@ -59,8 +63,9 @@
                     "paths": {
                         "/quotes": {
                             "post": {
+                                "tags": ["Quotes"],
                                 "summary": "Create a new quote",
-                                "description": "Add a new quote with text and speaker information",
+                                "description": "Add a new quote with text and speaker.",
                                 "requestBody": {
                                     "required": true,
                                     "content": {
@@ -69,128 +74,47 @@
                                                 "type": "object",
                                                 "required": ["text", "speaker"],
                                                 "properties": {
-                                                    "text": {
-                                                        "type": "string",
-                                                        "description": "The quote text",
-                                                        "example": "test"
-                                                    },
-                                                    "speaker": {
-                                                        "type": "string",
-                                                        "description": "The person who said the quote",
-                                                        "example": "me"
-                                                    }
+                                                    "text": { "type": "string" },
+                                                    "speaker": { "type": "string" }
                                                 }
                                             },
                                             "examples": {
-                                                "example1": {
-                                                    "summary": "Basic quote example",
-                                                    "value": {
-                                                        "text": "test",
-                                                        "speaker": "me"
-                                                    }
-                                                },
-                                                "example2": {
-                                                    "summary": "Inspirational quote",
-                                                    "value": {
-                                                        "text": "The only way to do great work is to love what you do",
-                                                        "speaker": "Steve Jobs"
-                                                    }
-                                                }
+                                                "sheldon": { "summary": "Sheldon", "value": { "text": "Bazinga, punk!", "speaker": "Sheldon Cooper" } },
+                                                "leonard": { "summary": "Leonard", "value": { "text": "You may be from Texas but I'm from New Jearsey!", "speaker": "Leonard Hofstadter" } }
                                             }
                                         }
                                     }
                                 },
                                 "responses": {
-                                    "200": {
-                                        "description": "Quote created successfully",
+                                    "201": {
+                                        "description": "Quote created",
                                         "content": {
                                             "application/json": {
-                                                "schema": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "id": {
-                                                            "type": "integer",
-                                                            "description": "Unique identifier for the quote"
-                                                        },
-                                                        "text": {
-                                                            "type": "string",
-                                                            "description": "The quote text"
-                                                        },
-                                                        "speaker": {
-                                                            "type": "string",
-                                                            "description": "The person who said the quote"
-                                                        },
-                                                    }
+                                                "schema": { "$ref": "#/components/schemas/Quote" },
+                                                "examples": {
+                                                    "created": { "value": { "id": "2c6d2a3d-9a3a-4b5c-8f2f-123456789abc", "text": "Bazinga, punk!", "speaker": "Sheldon Cooper" } }
                                                 }
                                             }
                                         }
                                     },
-                                    "400": {
-                                        "description": "Bad request - invalid input",
-                                        "content": {
-                                            "application/json": {
-                                                "schema": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "error": {
-                                                            "type": "string",
-                                                            "example": "Invalid input: text and speaker are required"
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    },
-                                    "500": {
-                                        "description": "Internal server error",
-                                        "content": {
-                                            "application/json": {
-                                                "schema": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "error": {
-                                                            "type": "string",
-                                                            "example": "Internal server error"
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
+                                    "400": { "description": "Invalid input" }
                                 }
                             },
                             "get": {
-                                "summary": "Get all quotes",
-                                "description": "Retrieve a list of all quotes",
+                                "tags": ["Quotes"],
+                                "summary": "List quotes",
+                                "description": "Return all quotes.",
                                 "responses": {
                                     "200": {
-                                        "description": "List of quotes retrieved successfully",
+                                        "description": "Array of quotes",
                                         "content": {
                                             "application/json": {
-                                                "schema": {
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "object",
-                                                        "properties": {
-                                                            "id": {
-                                                                "type": "integer",
-                                                                "description": "Unique identifier for the quote"
-                                                            },
-                                                            "text": {
-                                                                "type": "string",
-                                                                "description": "The quote text"
-                                                            },
-                                                            "speaker": {
-                                                                "type": "string",
-                                                                "description": "The person who said the quote"
-                                                            },
-                                                            "created_at": {
-                                                                "type": "string",
-                                                                "format": "date-time",
-                                                                "description": "When the quote was created"
-                                                            }
-                                                        }
-                                                    }
+                                                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Quote" } },
+                                                "examples": {
+                                                    "list": { "value": [
+                                                        { "id": "11111111-1111-1111-1111-111111111111", "text": "Bazinga, punk!", "speaker": "Sheldon Cooper" },
+                                                        { "id": "22222222-2222-2222-2222-222222222222", "text": "You may be from Texas but I'm from New Jearsey!", "speaker": "Leonard Hofstadter" }
+                                                    ] }
                                                 }
                                             }
                                         }
@@ -200,128 +124,66 @@
                         },
                         "/quote": {
                             "get": {
-                                "summary": "Get a random quote",
-                                "description": "Retrieve a single random quote from the collection",
+                                "tags": ["Quotes"],
+                                "summary": "Random quote",
                                 "responses": {
-                                    "200": {
-                                        "description": "Random quote retrieved successfully",
-                                        "content": {
-                                            "application/json": {
-                                                "schema": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "id": {
-                                                            "type": "integer",
-                                                            "description": "Unique identifier for the quote"
-                                                        },
-                                                        "text": {
-                                                            "type": "string",
-                                                            "description": "The quote text"
-                                                        },
-                                                        "speaker": {
-                                                            "type": "string",
-                                                            "description": "The person who said the quote"
-                                                        },
-                                                        "created_at": {
-                                                            "type": "string",
-                                                            "format": "date-time",
-                                                            "description": "When the quote was created"
-                                                        }
-                                                    }
-                                                },
-                                                "example": {
-                                                    "id": 42,
-                                                    "text": "The only way to do great work is to love what you do",
-                                                    "speaker": "Steve Jobs",
-                                                    "created_at": "2024-01-15T10:30:00Z"
-                                                }
-                                            }
-                                        }
-                                    },
-                                    "404": {
-                                        "description": "No quotes found",
-                                        "content": {
-                                            "application/json": {
-                                                "schema": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "error": {
-                                                            "type": "string",
-                                                            "example": "No quotes available"
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
+                                    "200": { "description": "Random quote", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Quote" }, "examples": { "random": { "value": { "id": "33333333-3333-3333-3333-333333333333", "text": "You may be from Texas but I'm from New Jearsey!", "speaker": "Leonard Hofstadter" } } } } } },
+                                    "404": { "description": "No quotes available" }
                                 }
                             }
                         },
                         "/quotes/{id}": {
                             "get": {
-                                "summary": "Get a specific quote",
-                                "description": "Retrieve a quote by its ID",
-                                "parameters": [
-                                    {
-                                        "name": "id",
-                                        "in": "path",
-                                        "required": true,
-                                        "schema": {
-                                            "type": "string"
-                                        },
-                                        "description": "The quote ID"
-                                    }
-                                ],
+                                "tags": ["Quotes"],
+                                "summary": "Quote by ID",
+                                "parameters": [ { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } } ],
                                 "responses": {
-                                    "200": {
-                                        "description": "Quote retrieved successfully",
-                                        "content": {
-                                            "application/json": {
-                                                "schema": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "id": {
-                                                            "type": "integer",
-                                                            "description": "Unique identifier for the quote"
-                                                        },
-                                                        "text": {
-                                                            "type": "string",
-                                                            "description": "The quote text"
-                                                        },
-                                                        "speaker": {
-                                                            "type": "string",
-                                                            "description": "The person who said the quote"
-                                                        },
-                                                        "created_at": {
-                                                            "type": "string",
-                                                            "format": "date-time",
-                                                            "description": "When the quote was created"
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    },
-                                    "404": {
-                                        "description": "Quote not found",
-                                        "content": {
-                                            "application/json": {
-                                                "schema": {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "error": {
-                                                            "type": "string",
-                                                            "example": "Quote not found"
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
+                                    "200": { "description": "Quote", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Quote" }, "examples": { "found": { "value": { "id": "44444444-4444-4444-4444-444444444444", "text": "Bazinga, punk!", "speaker": "Sheldon Cooper" } } } } } },
+                                    "404": { "description": "Not found" }
                                 }
+                            }
+                        },
+                        "/shorten": {
+                            "post": {
+                                "tags": ["URL Shortener"],
+                                "summary": "Shorten a URL",
+                                "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "required": ["url"], "properties": { "url": { "type": "string" } } }, "examples": { "rust": { "value": { "url": "https://www.rust-lang.org" } }, "actix": { "value": { "url": "https://actix.rs" } } } } } },
+                                "responses": { "200": { "description": "Short URL created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ShortenResponse" }, "examples": { "short": { "value": { "short": "a1b2c", "url": "https://www.rust-lang.org" } } } } } } }
+                            }
+                        },
+                        "/path/{short}": {
+                            "get": {
+                                "tags": ["URL Shortener"],
+                                "summary": "Redirect short URL",
+                                "parameters": [ { "name": "short", "in": "path", "required": true, "schema": { "type": "string" }, "examples": { "ex": { "value": "a1b2c" } } } ],
+                                "responses": { "302": { "description": "Redirect to original URL (Location header)" }, "404": { "description": "Short code not found" } }
                             }
                         }
                     }
+                ,
+                "components": {
+                    "schemas": {
+                        "Quote": {
+                            "type": "object",
+                            "properties": {
+                                "id": { "type": "string", "description": "UUID" },
+                                "text": { "type": "string" },
+                                "speaker": { "type": "string" }
+                            },
+                            "required": ["id", "text", "speaker"],
+                            "example": { "id": "uuid-example", "text": "Bazinga, punk!", "speaker": "Sheldon Cooper" }
+                        },
+                        "ShortenResponse": {
+                            "type": "object",
+                            "properties": {
+                                "short": { "type": "string", "description": "Short code" },
+                                "url": { "type": "string", "description": "Original URL" }
+                            },
+                            "required": ["short", "url"],
+                            "example": { "short": "abc12", "url": "https://www.rust-lang.org" }
+                        }
+                    }
+                }
                 };
 
                 const ui = SwaggerUIBundle({

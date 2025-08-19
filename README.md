@@ -76,8 +76,6 @@ Ignoring the server response, like all the others you can see what you would exp
     - [x] Redirect short URLs
     - [ ] Delete request for URLs
 
-### Ship 3
-
 ~~- [ ] Update index page
     - [ ] Create pastebin card
     - [ ] Update the styling & js~~
