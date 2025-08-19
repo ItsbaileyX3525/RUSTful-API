@@ -151,6 +151,14 @@
                                 "responses": { "200": { "description": "Short URL created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ShortenResponse" }, "examples": { "short": { "value": { "short": "a1b2c", "url": "https://www.rust-lang.org" } } } } } } }
                             }
                         },
+                        "/shorten/{short}": {
+                            "delete": {
+                                "tags": ["URL Shortener"],
+                                "summary": "Delete a short URL",
+                                "parameters": [ { "name": "short", "in": "path", "required": true, "schema": { "type": "string" }, "examples": { "code": { "value": "a1b2c" } } } ],
+                                "responses": { "204": { "description": "Deleted" }, "404": { "description": "Not found" } }
+                            }
+                        },
                         "/path/{short}": {
                             "get": {
                                 "tags": ["URL Shortener"],

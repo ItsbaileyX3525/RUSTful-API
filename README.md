@@ -69,12 +69,12 @@ Ignoring the server response, like all the others you can see what you would exp
     - [ ] Create URL shortener card
     - [ ] Update styling & js~~
 
-- [ ] Update rust server
+- [x] Update rust server
     - [x] Handle new URLs
         - [x] Create short URL
         - [x] Store it in the database
     - [x] Redirect short URLs
-    - [ ] Delete request for URLs
+    - [x] Delete request for URLs
 
 ~~- [ ] Update index page
     - [ ] Create pastebin card

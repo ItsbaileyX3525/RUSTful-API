@@ -1,4 +1,4 @@
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{get, post, delete, web, App, HttpResponse, HttpServer, Responder};
 use actix_cors::Cors;
 use actix_files;
 use rand::{seq::IndexedMutRandom};
@@ -110,6 +110,17 @@ async fn get_shortened_url(data: web::Data<AppState>, path: web::Path<String>) -
     }
 }
 
+#[delete("/shorten/{short}")]
+async fn delete_short_url(data: web::Data<AppState>, path: web::Path<String>) -> impl Responder {
+    let short = path.into_inner();
+    let mut url_map = data.url_map.lock().unwrap();
+    if url_map.remove(&short).is_some() {
+        HttpResponse::NoContent().finish()
+    } else {
+        HttpResponse::NotFound().body("Short URL not found.")
+    }
+}
+
 
 use std::fs::metadata;
 fn load_rustls_config() -> Option<rustls::ServerConfig> {
@@ -179,6 +190,7 @@ async fn main() -> std::io::Result<()> {
                         .service(greet)
                         .service(shorten_url)
                         .service(get_shortened_url)
+                        .service(delete_short_url)
                         // Static files must go last for some reason
                         .service(actix_files::Files::new("/src/styles", "./src/styles"))
                         .service(actix_files::Files::new("/", "./src").index_file("index.html"))
@@ -204,6 +216,7 @@ async fn main() -> std::io::Result<()> {
                     .service(greet)
                     .service(shorten_url)
                     .service(get_shortened_url)
+                    .service(delete_short_url)
                     // Static files must go last for some reason
                     .service(actix_files::Files::new("/", "./src").index_file("index.html"))
             })
@@ -233,6 +246,7 @@ async fn main() -> std::io::Result<()> {
                     .service(greet)
                     .service(shorten_url)
                     .service(get_shortened_url)
+                    .service(delete_short_url)
                     // Static files must go last for some reason
                     .service(actix_files::Files::new("/", "./src").index_file("index.html"))
             })
