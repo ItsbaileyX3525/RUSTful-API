@@ -65,22 +65,23 @@ Ignoring the server response, like all the others you can see what you would exp
 
 ### Ship 2
 
-- [ ] Update index page
+~~- [ ] Update index page
     - [ ] Create URL shortener card
-    - [ ] Update styling & js
+    - [ ] Update styling & js~~
 
 - [ ] Update rust server
-    - [ ] Handle new URLs
-        - [ ] Create short URL
-        - [ ] Store it in the database
-    - [ ] Redirect short URLs
+    - [x] Handle new URLs
+        - [x] Create short URL
+        - [x] Store it in the database
+    - [x] Redirect short URLs
     - [ ] Delete request for URLs
 
 ### Ship 3
 
-- [ ] Update index page
+~~- [ ] Update index page
     - [ ] Create pastebin card
-    - [ ] Update the styling & js
+    - [ ] Update the styling & js~~
+
 - [ ] Update rust server
     - [ ] Support for uploading text
     - [ ] Support retrieving text

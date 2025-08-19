@@ -28,8 +28,11 @@ struct NewQuote {
     speaker: String,
 }
 
+use std::collections::HashMap;
+
 struct AppState {
     quotes: Mutex<Vec<Quote>>,
+    url_map: Mutex<HashMap<String, String>>, // short -> original
 }
 
 #[get("/quotes")]
@@ -76,9 +79,47 @@ async fn add_quote(data: web::Data<AppState>, new_quote: web::Json<NewQuote>,) -
     HttpResponse::Created().json(quote)
 }
 
-fn load_rustls_config() -> rustls::ServerConfig {
-    let cert_file = &mut BufReader::new(File::open("ssl/cert.pem").expect("Failed to open cert.pem"));
-    let key_file = &mut BufReader::new(File::open("ssl/key.pem").expect("Failed to open key.pem"));
+
+#[derive(Deserialize)]
+struct ShortenRequest {
+    url: String,
+}
+
+#[derive(Serialize)]
+struct ShortenResponse {
+    short: String,
+    url: String,
+}
+
+#[post("/shorten")]
+async fn shorten_url(data: web::Data<AppState>, req: web::Json<ShortenRequest>) -> impl Responder {
+    let mut url_map = data.url_map.lock().unwrap();
+    let short = Uuid::new_v4().to_string()[..5].to_string();
+    url_map.insert(short.clone(), req.url.clone());
+    HttpResponse::Ok().json(ShortenResponse { short, url: req.url.clone() })
+}
+
+#[get("/path/{short}")]
+async fn get_shortened_url(data: web::Data<AppState>, path: web::Path<String>) -> impl Responder {
+    let short = path.into_inner();
+    let url_map = data.url_map.lock().unwrap();
+    if let Some(url) = url_map.get(&short) {
+        HttpResponse::Found().append_header(("Location", url.clone())).finish()
+    } else {
+        HttpResponse::NotFound().body("Short URL not found.")
+    }
+}
+
+
+use std::fs::metadata;
+fn load_rustls_config() -> Option<rustls::ServerConfig> {
+    let cert_path = "ssl/cert.pem";
+    let key_path = "ssl/key.pem";
+    if metadata(cert_path).is_err() || metadata(key_path).is_err() {
+        return None;
+    }
+    let cert_file = &mut BufReader::new(File::open(cert_path).expect("Failed to open cert.pem"));
+    let key_file = &mut BufReader::new(File::open(key_path).expect("Failed to open key.pem"));
 
     let cert_chain: Vec<CertificateDer> = certs(cert_file)
         .collect::<Result<Vec<_>, _>>()
@@ -88,10 +129,10 @@ fn load_rustls_config() -> rustls::ServerConfig {
         .expect("Failed to parse private key")
         .expect("No private key found");
 
-    ServerConfig::builder()
+    Some(ServerConfig::builder()
         .with_no_client_auth()
         .with_single_cert(cert_chain, private_key)
-        .expect("Failed to create TLS configuration")
+        .expect("Failed to create TLS configuration"))
 }
 
 #[actix_web::main]
@@ -111,62 +152,93 @@ async fn main() -> std::io::Result<()> {
 
     let app_state = web::Data::new(AppState {
         quotes: Mutex::new(initial_quotes),
+        url_map: Mutex::new(HashMap::new()),
     });
 
-    let config = load_rustls_config();
+    match load_rustls_config() {
+        Some(config) => {
+            println!("Starting HTTPS server at https://0.0.0.0:443");
+            println!("Starting HTTP server at http://0.0.0.0:80");
 
-    println!("Starting HTTPS server at https://0.0.0.0");
-    println!("Starting HTTP server at http://0.0.0.0:80");
+            let https_server = HttpServer::new({
+                let app_state = app_state.clone();
+                move || {
+                    App::new()
+                        .wrap(
+                            Cors::default()
+                                .allow_any_origin()
+                                .allow_any_method()
+                                .allow_any_header()
+                                .supports_credentials()
+                        )
+                        .app_data(app_state.clone())
+                        .service(get_quotes)
+                        .service(get_random_quote)
+                        .service(get_quote_by_id)
+                        .service(add_quote)
+                        .service(greet)
+                        .service(shorten_url)
+                        .service(get_shortened_url)
+                        // Static files must go last for some reason
+                        .service(actix_files::Files::new("/src/styles", "./src/styles"))
+                        .service(actix_files::Files::new("/", "./src").index_file("index.html"))
+                }
+            })
+            .bind_rustls_0_23(("0.0.0.0", 443), config)?
+            .run();
 
+            let http_server = HttpServer::new(move || {
+                App::new()
+                    .wrap(
+                        Cors::default()
+                            .allow_any_origin()
+                            .allow_any_method()
+                            .allow_any_header()
+                            .supports_credentials()
+                    )
+                    .app_data(app_state.clone())
+                    .service(get_quotes)
+                    .service(get_random_quote)
+                    .service(get_quote_by_id)
+                    .service(add_quote)
+                    .service(greet)
+                    .service(shorten_url)
+                    .service(get_shortened_url)
+                    // Static files must go last for some reason
+                    .service(actix_files::Files::new("/", "./src").index_file("index.html"))
+            })
+            .bind(("0.0.0.0", 80))?
+            .run();
 
-    let https_server = HttpServer::new({
-        let app_state = app_state.clone();
-        move || {
-            App::new()
-                .wrap(
-                    Cors::default()
-                        .allow_any_origin()
-                        .allow_any_method()
-                        .allow_any_header()
-                        .supports_credentials()
-                )
-                .app_data(app_state.clone())
-                .service(get_quotes)
-                .service(get_random_quote)
-                .service(get_quote_by_id)
-                .service(add_quote)
-                .service(greet)
-                // Static files must go last for some reason
-                .service(actix_files::Files::new("/src/styles", "./src/styles"))
-                .service(actix_files::Files::new("/", "./src").index_file("index.html"))
+            // Run both servers concurrently
+            let (_https, _http) = tokio::try_join!(https_server, http_server)?;
+            Ok(())
         }
-    })
-    .bind_rustls_0_23(("0.0.0.0", 443), config)?
-    .run();
-
-    let http_server = HttpServer::new(move || {
-        App::new()
-            .wrap(
-                Cors::default()
-                    .allow_any_origin()
-                    .allow_any_method()
-                    .allow_any_header()
-                    .supports_credentials()
-            )
-            .app_data(app_state.clone())
-            .service(get_quotes)
-            .service(get_random_quote)
-            .service(get_quote_by_id)
-            .service(add_quote)
-            .service(greet)
-            // Static files must go last for some reason
-            .service(actix_files::Files::new("/", "./src").index_file("index.html"))
-    })
-    .bind(("0.0.0.0", 80))?
-    .run();
-
-
-    // Run both servers concurrently
-    let (_https, _http) = tokio::try_join!(https_server, http_server)?;
-    Ok(())
+        None => {
+            println!("SSL not found, starting HTTP server at http://0.0.0.0:840");
+            HttpServer::new(move || {
+                App::new()
+                    .wrap(
+                        Cors::default()
+                            .allow_any_origin()
+                            .allow_any_method()
+                            .allow_any_header()
+                            .supports_credentials()
+                    )
+                    .app_data(app_state.clone())
+                    .service(get_quotes)
+                    .service(get_random_quote)
+                    .service(get_quote_by_id)
+                    .service(add_quote)
+                    .service(greet)
+                    .service(shorten_url)
+                    .service(get_shortened_url)
+                    // Static files must go last for some reason
+                    .service(actix_files::Files::new("/", "./src").index_file("index.html"))
+            })
+            .bind(("0.0.0.0", 840))?
+            .run()
+            .await
+        }
+    }
 }
